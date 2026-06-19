@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modern To-Do Task Manager</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background: linear-gradient(135deg,#667eea,#764ba2);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:600px;
+    background:#fff;
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.2);
+}
+
+h1{
+    text-align:center;
+    margin-bottom:20px;
+    color:#333;
+}
+
+.input-box{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+}
+
+.input-box input{
+    flex:1;
+    padding:12px;
+    border:2px solid #ddd;
+    border-radius:10px;
+    font-size:16px;
+}
+
+.input-box button{
+    padding:12px 20px;
+    border:none;
+    border-radius:10px;
+    background:#667eea;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.input-box button:hover{
+    background:#5563d6;
+}
+
+.filters{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.filters button{
+    margin:5px;
+    padding:8px 15px;
+    border:none;
+    border-radius:20px;
+    background:#eee;
+    cursor:pointer;
+}
+
+.filters button:hover{
+    background:#667eea;
+    color:white;
+}
+
+.task{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#f7f7f7;
+    padding:12px;
+    margin-bottom:10px;
+    border-radius:10px;
+}
+
+.task.completed span{
+    text-decoration:line-through;
+    color:gray;
+}
+
+.actions button{
+    border:none;
+    padding:6px 10px;
+    margin-left:5px;
+    border-radius:5px;
+    cursor:pointer;
+    color:white;
+}
+
+.complete{
+    background:#28a745;
+}
+
+.edit{
+    background:#f39c12;
+}
+
+.delete{
+    background:#e74c3c;
+}
+
+.stats{
+    margin-top:20px;
+    padding-top:15px;
+    border-top:1px solid #ddd;
+}
+
+.stats p{
+    margin:5px 0;
+    font-weight:bold;
+}
+
+.empty{
+    text-align:center;
+    color:#777;
+    padding:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📝 Modern To-Do Task Manager</h1>
+
+    <div class="input-box">
+        <input type="text" id="taskInput" placeholder="Enter a task...">
+        <button onclick="addTask()">Add</button>
+    </div>
+
+    <div class="filters">
+        <button onclick="filterTasks('all')">All</button>
+        <button onclick="filterTasks('active')">Active</button>
+        <button onclick="filterTasks('completed')">Completed</button>
+    </div>
+
+    <div id="taskList"></div>
+
+    <div class="stats">
+        <p>Total Tasks: <span id="total">0</span></p>
+        <p>Completed: <span id="completed">0</span></p>
+        <p>Pending: <span id="pending">0</span></p>
+    </div>
+
+</div>
+
+<script>
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let currentFilter = "all";
+
+function saveTasks(){
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function addTask(){
+
+    const input = document.getElementById("taskInput");
+    const text = input.value.trim();
+
+    if(text === ""){
+        alert("Please enter a task!");
+        return;
+    }
+
+    tasks.push({
+        text:text,
+        completed:false
+    });
+
+    input.value = "";
+
+    saveTasks();
+    renderTasks();
+}
+
+function toggleTask(index){
+    tasks[index].completed = !tasks[index].completed;
+    saveTasks();
+    renderTasks();
+}
+
+function deleteTask(index){
+
+    if(confirm("Delete this task?")){
+        tasks.splice(index,1);
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function editTask(index){
+
+    let newText = prompt(
+        "Edit Task",
+        tasks[index].text
+    );
+
+    if(newText && newText.trim() !== ""){
+        tasks[index].text = newText.trim();
+        saveTasks();
+        renderTasks();
+    }
+}
+
+function filterTasks(filter){
+    currentFilter = filter;
+    renderTasks();
+}
+
+function renderTasks(){
+
+    const taskList =
+        document.getElementById("taskList");
+
+    taskList.innerHTML = "";
+
+    let filtered = tasks;
+
+    if(currentFilter === "active"){
+        filtered = tasks.filter(
+            task => !task.completed
+        );
+    }
+
+    if(currentFilter === "completed"){
+        filtered = tasks.filter(
+            task => task.completed
+        );
+    }
+
+    if(filtered.length === 0){
+        taskList.innerHTML =
+        `<div class="empty">
+            No tasks found
+        </div>`;
+    }
+
+    filtered.forEach(task=>{
+
+        const realIndex =
+            tasks.indexOf(task);
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            task.completed ?
+            "task completed" :
+            "task";
+
+        div.innerHTML = `
+            <span>${task.text}</span>
+
+            <div class="actions">
+
+                <button
+                class="complete"
+                onclick="toggleTask(${realIndex})">
+                ✓
+                </button>
+
+                <button
+                class="edit"
+                onclick="editTask(${realIndex})">
+                Edit
+                </button>
+
+                <button
+                class="delete"
+                onclick="deleteTask(${realIndex})">
+                Delete
+                </button>
+
+            </div>
+        `;
+
+        taskList.appendChild(div);
+    });
+
+    updateStats();
+}
+
+function updateStats(){
+
+    let total = tasks.length;
+
+    let completed =
+        tasks.filter(
+            task => task.completed
+        ).length;
+
+    let pending =
+        total - completed;
+
+    document.getElementById("total")
+    .textContent = total;
+
+    document.getElementById("completed")
+    .textContent = completed;
+
+    document.getElementById("pending")
+    .textContent = pending;
+}
+
+document.getElementById("taskInput")
+.addEventListener("keypress", function(e){
+    if(e.key === "Enter"){
+        addTask();
+    }
+});
+
+renderTasks();
+
+</script>
+
+</body>
+</html>
